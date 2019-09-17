@@ -1,96 +1,96 @@
 import React, { Component } from 'react'
-import { FlatList, StyleSheet, Image } from 'react-native'
-import { View, Container, Button, Item, Input, Content, Header, Fab } from 'native-base'
-import NoteListBox from '../components/NoteListBox';
+import { FlatList, StyleSheet, Image, TouchableOpacity, Text } from 'react-native'
+import { View, Container, Button, Item, Input, Content, Header, Fab, Card,  } from 'native-base'
+// import NoteListBox from '../components/NoteListBox';
 import HeaderMain from '../header/HeaderMain'
+import moment from 'moment'
 import Icon from 'react-native-vector-icons/FontAwesome';
+import { searchNote, getNote, sortNote } from '../redux/actions/notes';
+import { connect } from 'react-redux';
 
 class Home extends Component {
     constructor(props) {
         super(props)
         this.state = {
-            active: 'true',
-            flatListProps: [
-                {
-                    id: '1',
-                    name: 'JavaScript',
-                    category: 'learn',
-                    date: '2000-09-09 00:00',
-                    content: 'lorem ipsum dolor sit amet'
-                  }, 
-                  {
-                      id: '2',
-                      name: 'Macbook Pro 2019',
-                      category: 'wishlist',
-                      date: '2000-09-09 00:00',
-                      content: 'lorem ipsum dolor sit amet'
-                  }, 
-                  {
-                      id: '3',
-                      name: 'Today',
-                      category: 'personal',
-                      date: '2000-09-09 00:00',
-                      content: 'lorem ipsum dolor sit amet'
-                  }, 
-                  {
-                      id: '4',
-                      name: 'Daily Standup',
-                      category: 'work',
-                      date: '2000-09-09 00:00',
-                      content: 'lorem ipsum dolor sit amet'
-                  }, 
-                  {
-                      id: '5',
-                      name: 'Hello World',
-                      category: 'important',
-                      date: '2000-09-09 00:00',
-                      content: 'lorem ipsum dolor sit amet'
-                  }, 
-                  {
-                      id: '6',
-                      name: 'Hello World',
-                      category: 'important',
-                      date: '2000-09-09 00:00',
-                      content: 'lorem ipsum dolor sit amet'
-                  }, 
-            ]
+            data: [],
+            active: false,
+            selected: 'key1'
         }
     }
 
-    _KeyExtractor = (item) => item.id 
+    handleSearch = (value) => {
+        this.props.dispatch(searchNote(value))
+    }
+
+    getNote = () => {
+        this.props.dispatch(getNote())
+        .then((res) => {
+            console.warn(res)
+        })
+    }
+    componentDidMount = () => {
+        const { navigation } = this.props;
+        this.focusListener = navigation.addListener('didFocus', () => {
+            this.getNote()
+        });
+    }
+
+    onValueChange(value) {
+        this.props.dispatch(sortNote(value))
+            .then(() => {
+
+            })
+        this.setState({
+            selected: value
+        })
+    }
 
     render() {
-        let random = () => {
-            {
-                let color = ['2FC2DF', '2FC2DF', 'C0EB6A', 'FAD06C', 'C0EB6A', 'FF92A9']
-                let randomizer = Math.floor(Math.random() * (5 - 0 + 1)) + 0
-                return '#' + color[randomizer]
-            }
-        }
         return (
             <Container>
                 <View style={styles.container}>
                     <HeaderMain fun={() => this.props.navigation.openDrawer()} />
                     <Item rounded style={{ marginTop: 80, width: 300, marginLeft: 32, position: 'absolute', backgroundColor: '#fff', zIndex: 1 }}>
-                        <Input placeholder='Search...'  />
+                        <Input placeholder='Search...'  onChangeText={(content) => this.handleSearch(content)} />
                     </Item>
-                    <Content>
+                    <Content style={{ paddingTop: 100}}>
                         <FlatList 
-                            style={{ marginTop: 80}}
-                            data={this.state.flatListProps}
-                            numColumns={2}
-                            keyExtractor={this._KeyExtractor}
-                            renderItem=
-                            {({ item }) =>
-                            <NoteListBox 
-                                time={item.date} 
-                                color={random()}
-                                title={item.name} 
-                                category={item.category} 
-                                notes={item.content} 
-                                events={() => this.props.navigation.navigate('EditNote')} 
-                            />
-                            }
+                             numColumns={2}
+                             data={this.props.note}
+                             contentContainerStyle={styles.list}
+                             renderItem={({ item }) => (
+                                 <Card style={{
+                                     width: 150, marginLeft: 10, marginRight: 15, marginBottom: 20, shadowColor: "#000", backgroundColor: `${item.color}`, padding: 8, paddingTop: 20, paddingBottom: 20,
+                                     shadowOffset: {
+                                         width: 0,
+                                         height: 3,
+                                     },
+                                     shadowOpacity: 0.29,
+                                     shadowRadius: 4.65,  
+                                     elevation: 7, borderRadius: 10
+                                 }} key={item.id_note}>
+                                     <TouchableOpacity onPress={() => this.props.navigation.navigate('EditNote', { note: item })}>
+                                         <View>
+                                             <Text style={styles.date}>{moment(item.updated_at).format('ll')}</Text>
+                                         </View>
+                                         <View>
+                                             <Text style={styles.title}>{item.title}</Text>
+                                         </View>
+                                         <View>
+                                             <Text style={styles.category}>{item.name_category}</Text>
+                                         </View>
+                                         <View>         
+                                             <Text style={{ color: "black" }}>{item.content}</Text>
+                                         </View>
+                                     </TouchableOpacity>
+                                 </Card>         
+                             )}
+                             onEndReached={this.handleLoadMore}
+                             onEndThreshold={50}
+                             ListHeaderComponent={this.renderHeader}
+                             ListFooterComponent={this.renderFooter}
+                             refreshing={this.state.refreshing}
+                             onRefresh={this.handleReflesh}
                         />
                     </Content>
                         <Fab 
@@ -110,8 +110,14 @@ class Home extends Component {
     }
 }
 
+const mapStateToProps = (state) => {
+    return {
+        note: state.notes.note,
+        sortNote: state.notes.sortNote
+    }
+}
 
-export default Home
+export default connect(mapStateToProps)(Home)
 
 const styles = StyleSheet.create({
     container: {
@@ -124,5 +130,26 @@ const styles = StyleSheet.create({
       height: 52,
       left: 0,
       top: 0,
+    },
+    date: {
+        color: "black", 
+        marginLeft: "auto"
+    },
+    title: {
+        color: "black", 
+        fontSize: 20, 
+        fontWeight: "bold"
+    },
+    category: {
+        color: "black", 
+        fontSize: 15, 
+        fontStyle: "italic"
+    },
+    list: {
+        justifyContent: 'center',
+        flexDirection: 'column',
+        marginLeft: 10,
+        paddingBottom: 100,
+        // flexWrap: 'wrap',
     },
 });

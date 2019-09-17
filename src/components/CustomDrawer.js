@@ -5,29 +5,33 @@ import { Container, View, Content, List, ListItem, Body, Left, Header } from 'na
 import { ScrollView, TouchableOpacity } from 'react-native-gesture-handler';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import CategoryBtn from './CategoryBtn'
+import { getCategory } from '../redux/actions/categories'
+import { sortbyCategory } from '../redux/actions/notes'
+import { connect } from 'react-redux'
 
 class CustomDrawer extends Component {
     constructor(props) {
         super(props)
         this.state = {
-            data: [
-                {
-                    id: '1',
-                    nameCategory: 'Wishlist',
-                },
-                {
-                    id: '2',
-                    nameCategory: 'Personal',
-                },
-                {
-                    id: '3',
-                    nameCategory: 'Work',
-                }
-            ]
+            selectCategory: []
         }
     }
 
-    _KeyExtractor = (item, index) => item.id;
+    componentDidMount = () => {
+        this.props.dispatch(getCategory())
+            .then(() => {
+                this.setState({
+                    selectCategory: this.props.category
+                })
+            })
+    }
+
+    byCategory = (id_category) => {
+        this.props.dispatch(sortbyCategory(id_category))
+            .then(() => {
+
+            })
+    }
 
     render() {
         return(
@@ -39,30 +43,37 @@ class CustomDrawer extends Component {
                             style={{ width: 140, height: 140, resizeMode: "cover", borderRadius: 70 }}/>
                         </View>
                         <View style={[styles.textCenter, { width: "100%", justifyContent: "center", marginTop: 20 }]}>
-                            <Text style={{ textAlign: "center", fontWeight: 'bold' }}>Spongebob Squarepants</Text>
+                            <Text style={styles.title}>Spongebob Squarepants</Text>
                         </View>
                     </Body>
                 </Header>
                 <ScrollView>
                     <TouchableOpacity>
                         <View style={styles.container}>
-                            <Icon name='folder-open' style={styles.icons} size={20} />
-                            <Text style={styles.categoryName}>All</Text>
+                        {this.state.selectCategory.map((item) =>
+                            <ListItem onPress={() => this.byCategory(item.id_category)}>
+                                <Left>
+                                    {/* <Image source={require('../assets/images/mahkota2.png')} style={{ width: 30, height: 30, marginRight: 10, marginTop: -5 }} /> */}
+                                    <Text>{item.name_category}</Text>
+                                </Left>
+                            </ListItem>
+                        )}
                         </View>
-                    </TouchableOpacity>
-
-                    <FlatList
-                        data={this.state.data}
-                        keyExtractor={this._KeyExtractor}
-                        renderItem={({ item }) => <CategoryBtn categoryName={item.nameCategory} />}
-                    />                    
+                    </TouchableOpacity>                 
                 </ScrollView>
             </View>
         )
     }
 }
 
-export default CustomDrawer
+const mapStateToProps = state => {
+    return {
+        note: state.notes.note,
+        category: state.categories.category
+    }
+}
+
+export default connect(mapStateToProps)(CustomDrawer)
 
 const styles = StyleSheet.create({
     photoDrawer: {
@@ -102,5 +113,9 @@ const styles = StyleSheet.create({
     },
     categoryName:{
         fontSize: 20
+    },
+    title: {
+        textAlign: "center", 
+        fontWeight: 'bold'
     }
 });
