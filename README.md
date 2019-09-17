@@ -18,7 +18,8 @@ TodoList App is a simple app, that user can add a note
 
 ## Features
 
-- Developing
+- Able to add book
+- Able to edit book
 
 ## Requirements
 
